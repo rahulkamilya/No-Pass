@@ -52,21 +52,21 @@ const Home = () => {
             </Avatar> */}
             <Avatar className="border-2 border-blue-950 w-10 h-10">
               <AvatarImage
-                className="ounded-full w-10 h-10 object-cover rounded-full"
+                className=" w-10 h-10 object-cover rounded-full"
                 src="https://www.manishguptaa.me/profile.jpg"
                 alt="rahulkapapa"
               />
             </Avatar>
             <Avatar className="border-2 border-blue-950 w-10 h-10">
               <AvatarImage
-                className="ounded-full w-10 h-10 object-cover rounded-full"
+                className=" w-10 h-10 object-cover rounded-full"
                 src="https://avatars.githubusercontent.com/u/68813555?v=4"
                 alt="manish'sson"
               />
             </Avatar>
             <Avatar className="border-2 border-blue-950 w-10 h-10">
               <AvatarImage
-                className="ounded-full w-10 h-10 object-cover rounded-full"
+                className=" w-10 h-10 object-cover rounded-full"
                 src="https://avatars.githubusercontent.com/u/109842815?v=4"
                 alt="rahulkapapa"
               />

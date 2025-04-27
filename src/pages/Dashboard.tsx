@@ -38,7 +38,9 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   const user = currentUser;
-  console.log(user);
+  // console.log(user);
+  // const res = user?.photoURL ? user.photoURL : null;
+  // console.log(res);
 
   // Password states
   const [passwords, setPasswords] = useState<Record<string, any>>({});
@@ -277,32 +279,35 @@ const Dashboard = () => {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="rounded-full p-0 w-10 h-10">
-              {user?.photoURL ? (
-                <Avatar>
-                  <AvatarImage
-                    className="ounded-full w-10 h-10 object-cover rounded-full"
-                    src={user.photoURL}
-                    alt="userimg"
-                  />
-                </Avatar>
-              ) : (
+            {user?.photoURL ? (
+              <Avatar className="w-10 h-10">
+                <AvatarImage
+                  className=" w-10 h-10 object-cover rounded-full"
+                  src={user.photoURL}
+                  alt="rahulkapapa"
+                />
+              </Avatar>
+            ) : (
+              <Button variant="ghost" className="rounded-full p-0 w-10 h-10">
                 <div className="rounded-full w-10 h-10 bg-purple-100 flex items-center justify-center">
                   <User className="h-5 w-5 text-purple-600" />
                 </div>
-              )}
-            </Button>
+              </Button>
+            )}
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem className="cursor-pointer">
+          <DropdownMenuContent align="end" className="w-50 items-center">
+            <DropdownMenuItem className="cursor-pointer items-center">
               <UserRound className="mr-2 h-4 w-4" />
               <span>{user.displayName}</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer">
+            <DropdownMenuItem className="cursor-pointer items-center">
               <Mail className="mr-2 h-4 w-4" />
               <span>{user.email}</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer" onClick={signOut}>
+            <DropdownMenuItem
+              className="cursor-pointer items-center"
+              onClick={signOut}
+            >
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>
