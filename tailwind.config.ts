@@ -65,6 +65,14 @@ export default {
           'logo-yellow': '#fbbc05',
           'logo-red': '#ea4335',
         },
+        vault: {
+          purple: "#9F7AEA", 
+          "purple-light": "#E9D8FD",
+          "purple-dark": "#6B46C1",
+          gray: "#F7FAFC",
+          "gray-light": "#EDF2F7",
+          "gray-dark": "#4A5568"
+        }
       },
       borderRadius: {
         lg: "var(--radius)",

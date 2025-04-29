@@ -1,8 +1,12 @@
-
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, createUserRecord, getUserRecord } from '@/lib/firebase';
-import { onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut, User } from 'firebase/auth';
-import { googleProvider } from '@/lib/firebase';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { auth, createUserRecord, getUserRecord } from "@/lib/firebase";
+import {
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut as firebaseSignOut,
+  User,
+} from "firebase/auth";
+import { googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextProps {
@@ -22,12 +26,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const { toast } = useToast();
 
-  const isProfileComplete = userProfile && userProfile.username && userProfile.phoneNumber;
+  const isProfileComplete =
+    userProfile && userProfile.username && userProfile.phoneNumber;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
-      
+
       if (user) {
         try {
           const profile = await getUserRecord(user.uid);
@@ -38,7 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         setUserProfile(null);
       }
-      
+
       setLoading(false);
     });
 
@@ -52,7 +57,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const user = result.user;
 
       // Check if user exists in Firestore
-      const profile = await getUserRecord(user.uid);
+      const profile = await getUserRecord(user.email);
       if (!profile) {
         // Create initial user record
         await createUserRecord(user.uid, {
@@ -109,7 +114,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

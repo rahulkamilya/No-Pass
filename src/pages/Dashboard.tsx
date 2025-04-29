@@ -1,21 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Lock,
   LogOut,
-  User,
-  Eye,
-  EyeOff,
-  Trash,
-  Edit,
-  CreditCard,
-  Plus,
-  Search,
-  Mail,
   UserRound,
+  ShieldCheck,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -27,20 +20,36 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { doc, updateDoc, getDoc, deleteField } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import { Avatar, AvatarImage } from "@radix-ui/react-avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+
+// Import custom components
+import SearchBar from "@/components/SearchBar";
+import PasswordItem from "@/components/PasswordItem";
+import CardItem from "@/components/CardItem";
+import EmptyState from "@/components/EmptyState";
+import AddButton from "@/components/AddButton";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("passwords");
   const [isAddingPassword, setIsAddingPassword] = useState(false);
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const { currentUser, userProfile, signOut } = useAuth();
   const { toast } = useToast();
 
   const user = currentUser;
-  // console.log(user);
-  // const res = user?.photoURL ? user.photoURL : null;
-  // console.log(res);
 
   // Password states
   const [passwords, setPasswords] = useState<Record<string, any>>({});
@@ -267,47 +276,86 @@ const Dashboard = () => {
     }
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied",
+      description: "Copied to clipboard",
+      duration: 2000,
+    });
+  };
+
+  const getInitials = (name: string) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
+  };
+
+  const toggleSortOrder = () => {
+    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+  };
+
+  const sortItems = <T extends Record<string, any>>(
+    items: Record<string, T>
+  ) => {
+    return Object.values(items).sort((a, b) => {
+      if (sortOrder === "asc") {
+        return a.createdAt > b.createdAt ? 1 : -1;
+      } else {
+        return a.createdAt < b.createdAt ? 1 : -1;
+      }
+    });
+  };
+
+  const filteredPasswords = sortItems(passwords).filter(
+    (password) =>
+      password.website?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      password.username?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredCards = sortItems(cards).filter((card) =>
+    card.cardName?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm">
-      <div className="flex items-center justify-between mb-8">
+    <div className="max-w-3xl mx-auto p-4 md:p-6 bg-white min-h-screen">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Lock className="w-7 h-7 text-purple-600" />
-          <h1 className="text-2xl font-semibold text-gray-800">
-            Password Vault Dashboard
-          </h1>
+          <div className="bg-vault-purple-light p-2 rounded-full">
+            <Lock className="w-5 h-5 text-vault-purple" />
+          </div>
+          <h1 className="text-xl font-medium text-gray-800">SecureVault</h1>
         </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            {user?.photoURL ? (
-              <Avatar className="w-10 h-10">
+            <Button variant="ghost" className="rounded-full p-0 h-9 w-9">
+              <Avatar className="h-9 w-9">
                 <AvatarImage
-                  className=" w-10 h-10 object-cover rounded-full"
-                  src={user.photoURL}
-                  alt="rahulkapapa"
+                  src={user?.photoURL || ""}
+                  alt={user?.displayName || "User"}
+                  referrerPolicy="no-referrer"
                 />
+                <AvatarFallback className="bg-vault-purple-light text-vault-purple-dark">
+                  {getInitials(user?.displayName || "")}
+                </AvatarFallback>
               </Avatar>
-            ) : (
-              <Button variant="ghost" className="rounded-full p-0 w-10 h-10">
-                <div className="rounded-full w-10 h-10 bg-purple-100 flex items-center justify-center">
-                  <User className="h-5 w-5 text-purple-600" />
-                </div>
-              </Button>
-            )}
+            </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-50 items-center">
-            <DropdownMenuItem className="cursor-pointer items-center">
+          <DropdownMenuContent align="end" className="w-56">
+            <div className="flex flex-col space-y-1 p-2">
+              <p className="text-sm font-medium">{user?.displayName}</p>
+              <p className="text-xs text-muted-foreground">{user?.email}</p>
+            </div>
+            <Separator />
+            <DropdownMenuItem className="cursor-pointer">
               <UserRound className="mr-2 h-4 w-4" />
-              <span>{user.displayName}</span>
+              <span>Profile</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer items-center">
-              <Mail className="mr-2 h-4 w-4" />
-              <span>{user.email}</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="cursor-pointer items-center"
-              onClick={signOut}
-            >
+            <DropdownMenuItem className="cursor-pointer" onClick={signOut}>
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>
@@ -315,14 +363,11 @@ const Dashboard = () => {
         </DropdownMenu>
       </div>
 
-      <div className="flex items-center bg-gray-50 rounded-md mb-6 px-3 py-2">
-        <Search className="h-5 w-5 text-gray-400 mr-2" />
-        <Input
-          type="search"
-          placeholder="Search by website, username, or card name..."
+      <div className="mb-6">
+        <SearchBar
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+          placeholder="Search by website, username, or card name..."
         />
       </div>
 
@@ -332,208 +377,194 @@ const Dashboard = () => {
         onValueChange={setActiveTab}
         className="w-full"
       >
-        <TabsList className="grid grid-cols-2 mb-6">
-          <TabsTrigger value="passwords" className="text-sm">
-            Passwords
-          </TabsTrigger>
-          <TabsTrigger value="cards" className="text-sm">
-            Credit Cards
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between mb-4">
+          <TabsList className="grid grid-cols-2">
+            <TabsTrigger value="passwords" className="text-sm">
+              Passwords
+            </TabsTrigger>
+            <TabsTrigger value="cards" className="text-sm">
+              Cards
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="passwords">
-          {!isAddingPassword ? (
-            <Button
-              onClick={() => setIsAddingPassword(true)}
-              className="w-full mb-6 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600"
-            >
-              <Plus className="h-4 w-4 mr-2" /> Add New Password
-            </Button>
-          ) : (
-            <Card className="mb-6">
-              <CardContent className="pt-6">
-                <form onSubmit={handleAddPassword}>
-                  <div className="space-y-4">
-                    <div>
-                      <Input
-                        placeholder="Website URL"
-                        value={newPassword.website}
-                        onChange={(e) =>
-                          setNewPassword({
-                            ...newPassword,
-                            website: e.target.value,
-                          })
-                        }
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Input
-                        placeholder="Username"
-                        value={newPassword.username}
-                        onChange={(e) =>
-                          setNewPassword({
-                            ...newPassword,
-                            username: e.target.value,
-                          })
-                        }
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Input
-                        type="password"
-                        placeholder="Password"
-                        value={newPassword.passwordVal}
-                        onChange={(e) =>
-                          setNewPassword({
-                            ...newPassword,
-                            passwordVal: e.target.value,
-                          })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        type="submit"
-                        className="flex-1 bg-purple-600 hover:bg-purple-700"
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setIsAddingPassword(false)}
-                        className="flex-1"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleSortOrder}
+            className="text-xs text-gray-500 flex items-center"
+          >
+            {sortOrder === "desc" ? (
+              <>
+                Newest first <ArrowDown className="ml-1 h-3 w-3" />
+              </>
+            ) : (
+              <>
+                Oldest first <ArrowUp className="ml-1 h-3 w-3" />
+              </>
+            )}
+          </Button>
+        </div>
+
+        <TabsContent value="passwords" className="mt-0">
+          <Dialog open={isAddingPassword} onOpenChange={setIsAddingPassword}>
+            <div className="mb-5">
+              <AddButton
+                onClick={() => setIsAddingPassword(true)}
+                label="Add New Password"
+              />
+            </div>
+
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add New Password</DialogTitle>
+                <DialogDescription>
+                  Securely store your login credentials
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleAddPassword}>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="website">Website</Label>
+                    <Input
+                      id="website"
+                      placeholder="Website URL or name"
+                      value={newPassword.website}
+                      onChange={(e) =>
+                        setNewPassword({
+                          ...newPassword,
+                          website: e.target.value,
+                        })
+                      }
+                      required
+                    />
                   </div>
-                </form>
-              </CardContent>
-            </Card>
-          )}
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      placeholder="Email or username"
+                      value={newPassword.username}
+                      onChange={(e) =>
+                        setNewPassword({
+                          ...newPassword,
+                          username: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Password"
+                      value={newPassword.passwordVal}
+                      onChange={(e) =>
+                        setNewPassword({
+                          ...newPassword,
+                          passwordVal: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="submit"
+                    className="bg-vault-purple hover:bg-vault-purple-dark"
+                  >
+                    Save Password
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
 
           <div className="space-y-3">
             {Object.values(passwords).length === 0 ? (
-              <div className="text-center py-10 text-gray-500">
-                <Lock className="mx-auto h-10 w-10 text-gray-300 mb-2" />
-                <p className="text-sm">No passwords saved yet</p>
+              <EmptyState type="passwords" />
+            ) : filteredPasswords.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No matching passwords found
               </div>
             ) : (
-              Object.values(passwords)
-                .filter(
-                  (password: any) =>
-                    password.website
-                      ?.toLowerCase()
-                      .includes(searchQuery.toLowerCase()) ||
-                    password.username
-                      ?.toLowerCase()
-                      .includes(searchQuery.toLowerCase())
-                )
-                .map((password: any) => (
-                  <Card key={password.id} className="overflow-hidden">
-                    <div className="p-4 flex justify-between items-center">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-800">
-                          {password.website}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {password.username}
-                        </p>
-                        <div className="flex items-center mt-1">
-                          <div className="text-sm font-mono">
-                            {revealedPasswordId === password.id
-                              ? atob(password.passwordVal)
-                              : "••••••••"}
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="ml-2 h-8 w-8 p-0"
-                            onClick={() =>
-                              togglePasswordVisibility(password.id)
-                            }
-                          >
-                            {revealedPasswordId === password.id ? (
-                              <EyeOff className="h-4 w-4 text-gray-500" />
-                            ) : (
-                              <Eye className="h-4 w-4 text-gray-500" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit className="h-4 w-4 text-gray-500" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={() => handleDeletePassword(password.id)}
-                        >
-                          <Trash className="h-4 w-4 text-gray-500" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))
+              filteredPasswords.map((password) => (
+                <PasswordItem
+                  key={password.id}
+                  password={password}
+                  isRevealed={revealedPasswordId === password.id}
+                  onToggleReveal={togglePasswordVisibility}
+                  onCopy={copyToClipboard}
+                  onDelete={handleDeletePassword}
+                />
+              ))
             )}
           </div>
         </TabsContent>
 
-        <TabsContent value="cards">
-          {!isAddingCard ? (
-            <Button
-              onClick={() => setIsAddingCard(true)}
-              className="w-full mb-6 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600"
-            >
-              <Plus className="h-4 w-4 mr-2" /> Add New Credit Card
-            </Button>
-          ) : (
-            <Card className="mb-6">
-              <CardContent className="pt-6">
-                <form onSubmit={handleAddCard}>
-                  <div className="space-y-4">
-                    <div>
+        <TabsContent value="cards" className="mt-0">
+          <Dialog open={isAddingCard} onOpenChange={setIsAddingCard}>
+            <div className="mb-5">
+              <AddButton
+                onClick={() => setIsAddingCard(true)}
+                label="Add New Credit Card"
+              />
+            </div>
+
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add New Credit Card</DialogTitle>
+                <DialogDescription>
+                  Securely store your payment information
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleAddCard}>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="cardName">Card Name</Label>
+                    <Input
+                      id="cardName"
+                      placeholder="Card nickname (e.g. Personal Visa)"
+                      value={newCard.cardName}
+                      onChange={(e) =>
+                        setNewCard({ ...newCard, cardName: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cardNumber">Card Number</Label>
+                    <Input
+                      id="cardNumber"
+                      placeholder="1234 5678 9012 3456"
+                      value={newCard.cardNumber}
+                      onChange={(e) =>
+                        setNewCard({ ...newCard, cardNumber: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="expiryDate">Expiry Date</Label>
                       <Input
-                        placeholder="Card Name"
-                        value={newCard.cardName}
-                        onChange={(e) =>
-                          setNewCard({ ...newCard, cardName: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Input
-                        placeholder="Card Number"
-                        value={newCard.cardNumber}
-                        onChange={(e) =>
-                          setNewCard({ ...newCard, cardNumber: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Input
-                        placeholder="Expiry (MM/YY)"
+                        id="expiryDate"
+                        placeholder="MM/YY"
                         value={newCard.expiryDate}
                         onChange={(e) =>
                           setNewCard({ ...newCard, expiryDate: e.target.value })
                         }
                         required
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cvv">CVV</Label>
                       <Input
-                        placeholder="CVV"
+                        id="cvv"
                         type="password"
+                        placeholder="123"
                         value={newCard.cvv}
                         onChange={(e) =>
                           setNewCard({ ...newCard, cvv: e.target.value })
@@ -541,102 +572,39 @@ const Dashboard = () => {
                         required
                       />
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        type="submit"
-                        className="flex-1 bg-purple-600 hover:bg-purple-700"
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setIsAddingCard(false)}
-                        className="flex-1"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
                   </div>
-                </form>
-              </CardContent>
-            </Card>
-          )}
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="submit"
+                    className="bg-vault-purple hover:bg-vault-purple-dark"
+                  >
+                    Save Card
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
 
           <div className="space-y-3">
             {Object.values(cards).length === 0 ? (
-              <div className="text-center py-10 text-gray-500">
-                <CreditCard className="mx-auto h-10 w-10 text-gray-300 mb-2" />
-                <p className="text-sm">No credit cards saved yet</p>
+              <EmptyState type="cards" />
+            ) : filteredCards.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No matching cards found
               </div>
             ) : (
-              Object.values(cards)
-                .filter((card: any) =>
-                  card.cardName
-                    ?.toLowerCase()
-                    .includes(searchQuery.toLowerCase())
-                )
-                .map((card: any) => (
-                  <Card key={card.id} className="overflow-hidden">
-                    <div className="p-4 bg-gradient-to-r from-purple-100 to-white">
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="font-medium text-gray-800">
-                          {card.cardName}
-                        </p>
-                        <CreditCard className="h-5 w-5 text-purple-600" />
-                      </div>
-                      <div className="font-mono text-lg text-gray-700 my-3">
-                        {revealedCardId === card.id
-                          ? atob(card.cardNumber)
-                          : formatCardNumber(card.cardNumber)}
-                      </div>
-                      <div className="flex justify-between">
-                        <div className="text-sm text-gray-600">
-                          <span>Expires: {card.expiryDate}</span>
-                        </div>
-                        <div className="text-sm font-mono">
-                          CVV:{" "}
-                          {revealedCardId === card.id ? atob(card.cvv) : "•••"}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center p-2 bg-white">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleCardVisibility(card.id)}
-                        className="text-sm text-gray-600"
-                      >
-                        {revealedCardId === card.id ? (
-                          <>
-                            <EyeOff className="h-4 w-4 mr-1" /> Hide Details
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="h-4 w-4 mr-1" /> Show Details
-                          </>
-                        )}
-                      </Button>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit className="h-4 w-4 text-gray-500" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={() => handleDeleteCard(card.id)}
-                        >
-                          <Trash className="h-4 w-4 text-gray-500" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))
+              filteredCards.map((card) => (
+                <CardItem
+                  key={card.id}
+                  card={card}
+                  isRevealed={revealedCardId === card.id}
+                  onToggleReveal={toggleCardVisibility}
+                  onCopy={copyToClipboard}
+                  onDelete={handleDeleteCard}
+                  formatCardNumber={formatCardNumber}
+                />
+              ))
             )}
           </div>
         </TabsContent>
